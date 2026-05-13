@@ -1,21 +1,24 @@
-import os
-from dotenv import load_dotenv
 from openai import OpenAI
+from hello_chat_bot.config import ConfigError, load_config
 
 
 def clean_text(text: str) -> str:
-        return text.encode("utf-8", errors="ignore").decode("utf-8")
+    return text.encode("utf-8", errors="ignore").decode("utf-8")
 
-# 读取根目录下的.env文件
-load_dotenv()
+try:
+    config = load_config()
+except ConfigError as e:
+    print(f"配置错误：{e}")
+    raise SystemExit(1)
+
 # 创建一个能够访问大模型服务的客户端
 client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    base_url=os.getenv("OPENAI_BASE_URL"),
+    api_key=config.api_key,
+    base_url=config.base_url,
 )
 # 从环境变量中读取模型名称
-model_name = os.getenv("MODEL_NAME", "deepseek-chat")
-
+model_name = config.model_name
+temperature = config.temperature
 messages = [
     {"role": "system", "content": "你是一个简洁、耐心的 AI 助手。"}
 ]
@@ -39,7 +42,7 @@ while True:
         response = client.chat.completions.create(
             model=model_name,
             messages=messages,
-            temperature=0.7,
+            temperature=temperature,
         )
         assistant_reply = clean_text(response.choices[0].message.content or "")
         print(f"\nAI：{assistant_reply}")
